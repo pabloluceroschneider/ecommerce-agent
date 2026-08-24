@@ -38,7 +38,7 @@ def run_agent(question: str):
 
     tools_dict = { t.name: t for t in tools }
 
-    llm = init_chat_model(f"{MODEL}", temperature=0)
+    llm = init_chat_model(f"{MODEL}", temperature=0, use_responses_api=True)
     llm_with_tools = llm.bind_tools(tools)
     print(f"Question: {question}")
     print("="*60)
@@ -46,17 +46,17 @@ def run_agent(question: str):
     messages = [
         SystemMessage(
             content=(
-                "You are a helpfun shopping assistant",
-                "You have access to a product catalog tool",
-                "and a discount tool.\n\n",
-                "STRICT RULES - you must follow these exactly:\n",
-                "1. NEVER guess or assume any product price.",
-                "You MUST call get_product_price first to get the real prince.\n",
-                "2. Only call apply_discount AFTER you have received ",
-                " a price from get_product_price. Pass the exact price ",
-                "returned by get_product_price - do NOT pass a made-up number.\n",
-                "3. NEVER calculate discounts yourself using math. ",
-                "Always use the apply_discount tool.\n",
+                "You are a helpfun shopping assistant "
+                "You have access to a product catalog tool "
+                "and a discount tool.\n\n"
+                "STRICT RULES - you must follow these exactly:\n"
+                "1. NEVER guess or assume any product price. "
+                "You MUST call get_product_price first to get the real prince.\n"
+                "2. Only call apply_discount AFTER you have received "
+                " a price from get_product_price. Pass the exact price "
+                "returned by get_product_price - do NOT pass a made-up number.\n"
+                "3. NEVER calculate discounts yourself using math. "
+                "Always use the apply_discount tool.\n"
                 "4. If the user does not specify a discount tier, "
                 "ask them which tier to use. - do NOT assume one."
             )
@@ -69,7 +69,7 @@ def run_agent(question: str):
         print(f"Iteration {iteration}")
         ai_message = llm_with_tools.invoke(messages)
 
-        tool_calls = ai_message.too_calls
+        tool_calls = ai_message.tool_calls
 
         if not tool_calls:
             return ai_message.content
@@ -91,10 +91,21 @@ def run_agent(question: str):
 
         print(f"    [Tool Result] {observation}")
 
+        messages.append(ai_message)
+        messages.append(
+            ToolMessage(content=str(observation), tool_call_id=tool_call_id)
+        )
+
+    print("ERROR:")
+    return None
+
 
 def main() -> None:
     print("Hello from ecommerce-agent!")
     result = run_agent("What is the price of a laptop after applying a gold discount?")
+    print("="*60)
+    print(result)
+
     return result
 
 
